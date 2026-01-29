@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memorial Photo AI</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-globes">
+        <div class="globe globe-1"></div>
+        <div class="globe globe-2"></div>
+    </div>
+    
+    <main class="container">
+        <div class="glass-card">
+            <header class="header">
+                <h1>영정사진 생성 AI</h1>
+                <p class="subtitle">소중한 분의 사진을 아름답게 복원하고 생성합니다.</p>
+            </header>
+            
+            <section class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                    <div class="upload-content">
+                        <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <p class="upload-text">사진을 이곳에 드래그하거나 <span class="highlight">클릭하여 업로드</span></p>
+                        <p class="upload-hint">JPG, PNG 파일 지원</p>
+                    </div>
+                    <div id="previewContainer" class="preview-container hidden">
+                        <img id="previewImage" src="" alt="Preview">
+                        <button class="remove-btn" id="removeBtn">✕</button>
+                    </div>
+                </div>
+            </section>
+
+            <button id="generateBtn" class="generate-btn" disabled>
+                <span class="btn-text">영정사진 생성하기</span>
+                <span class="btn-shine"></span>
+            </button>
+
+            <section class="result-section">
+                <div class="placeholder-box">
+                    <p>생성된 결과물이 이곳에 표시됩니다</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
