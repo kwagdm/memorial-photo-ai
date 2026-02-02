@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const removeBtn = document.getElementById('removeBtn');
     const generateBtn = document.getElementById('generateBtn');
 
+    let selectedFile = null;
+
     // Handle click to upload
     uploadArea.addEventListener('click', (e) => {
         if (e.target !== removeBtn) {
@@ -57,12 +59,22 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleFiles(files) {
         if (files.length > 0) {
             const file = files[0];
-            if (file.type.startsWith('image/')) {
-                showPreview(file);
-                generateBtn.disabled = false;
-            } else {
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
                 alert('이미지 파일만 업로드해주세요.');
+                return;
             }
+
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('파일 크기는 5MB 이하여야 합니다.');
+                return;
+            }
+
+            selectedFile = file; // Store file in variable
+            showPreview(file);
+            generateBtn.disabled = false;
         }
     }
 
@@ -79,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle remove
     removeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        selectedFile = null; // Clear stored file
         fileInput.value = '';
         previewImage.src = '';
         previewContainer.classList.add('hidden');
@@ -87,7 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle generate button
     generateBtn.addEventListener('click', () => {
-        console.log('Generate Memorial Photo Clicked');
+        if (!selectedFile) return;
+        console.log('Generate Memorial Photo Clicked', selectedFile);
         // Future logic goes here
     });
 });
