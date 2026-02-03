@@ -1,0 +1,25 @@
+{
+  "name": "memorial-photo-ai",
+  "version": "1.0.0",
+  "description": "Experimental side project using Antigravity.",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kwagdm/memorial-photo-ai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kwagdm/memorial-photo-ai/issues"
+  },
+  "homepage": "https://github.com/kwagdm/memorial-photo-ai#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "multer": "^2.0.2"
+  }
+}

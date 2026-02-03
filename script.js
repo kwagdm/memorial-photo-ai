@@ -99,9 +99,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Handle generate button
-    generateBtn.addEventListener('click', () => {
-        if (!selectedFile) return;
-        console.log('Generate Memorial Photo Clicked', selectedFile);
-        // Future logic goes here
+    generateBtn.addEventListener('click', async () => {
+        if (!selectedFile) {
+            alert('사진을 선택해주세요.');
+            return;
+        }
+        
+        if (generateBtn.disabled) return; // Prevent double click
+
+        console.log('Uploading file:', selectedFile.name);
+        
+        // UI Loading State (Optional simple feedback)
+        const originalText = generateBtn.querySelector('.btn-text').innerText;
+        generateBtn.querySelector('.btn-text').innerText = '업로드 중...';
+        generateBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('photo', selectedFile);
+
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('업로드 성공! (임시 저장됨)');
+                console.log('Server response:', result);
+            } else {
+                alert('업로드 실패: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('서버 연결 오류가 발생했습니다.');
+        } finally {
+            // Reset UI
+            generateBtn.querySelector('.btn-text').innerText = originalText;
+            generateBtn.disabled = false;
+        }
     });
 });
