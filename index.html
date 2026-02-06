@@ -22,7 +22,8 @@
                 <p class="subtitle">소중한 분의 사진을 아름답게 복원하고 생성합니다.</p>
             </header>
             
-            <section class="upload-section">
+            <div id="uploadView">
+                <section class="upload-section">
                 <div class="upload-area" id="uploadArea">
                     <input type="file" id="fileInput" accept="image/*" hidden>
                     <div class="upload-content">
@@ -43,10 +44,17 @@
                 <span class="btn-text">영정사진 생성하기</span>
                 <span class="btn-shine"></span>
             </button>
+            </div>
 
-            <section class="result-section">
-                <div class="placeholder-box">
-                    <p>생성된 결과물이 이곳에 표시됩니다</p>
+            <section class="result-section hidden" id="resultView">
+                <div class="result-display">
+                    <div class="result-frame">
+                        <img id="finalResultImage" src="" alt="Generated Memorial Photo">
+                    </div>
+                    <div class="action-footer">
+                        <button id="downloadBtn" class="secondary-btn">다운로드</button>
+                        <button id="resetBtn" class="text-link-btn">다른 사진으로 시도하기</button>
+                    </div>
                 </div>
             </section>
         </div>

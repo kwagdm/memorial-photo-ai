@@ -24,10 +24,27 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 // Serve static files
 app.use(express.static('.'));
+app.use('/public', express.static('public'));
+
+// Mock AI Generate endpoint
+app.post('/generate', (req, res) => {
+    console.log('Mock AI generation requested...');
+    // Simulate processing time (4 seconds)
+    setTimeout(() => {
+        console.log('Mock generation complete.');
+        res.json({ 
+            success: true, 
+            resultUrl: '/public/sample-result.jpg' 
+        });
+    }, 4000);
+});
 
 // Upload endpoint
 app.post('/upload', upload.single('photo'), (req, res) => {
