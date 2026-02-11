@@ -142,7 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Hide upload view, show result view
                 document.getElementById('uploadView').classList.add('hidden');
                 document.getElementById('resultView').classList.remove('hidden');
-                document.getElementById('finalResultImage').src = genResult.resultUrl;
+                // Use resultBase64 from the server
+                document.getElementById('finalResultImage').src = genResult.resultBase64;
                 
                 alert('영정사진 생성이 완료되었습니다!');
             } else {
