@@ -1,112 +1,52 @@
-# Memorial Photo AI
+# Memorial Photo AI (한국형 영정사진 생성기)
 
-Experimental side project using Antigravity to build an AI-powered memorial photo generator.
+**"100원으로 준비하는 가장 아름다운 마지막 사진"**
 
----
-
-# Progress
-
-- [x] PR1: Initial UI scaffold
-- [x] PR2a: Client-side file validation
-- [x] PR2b: Server-side file upload handling
-- [x] PR3a: Mock AI generation flow (Korean standard)
+이 프로젝트는 누구나 무료로, 쉽고, 안전하게 고품질의 영정사진을 미리 준비할 수 있도록 돕는 AI 서비스입니다.
+복잡한 스튜디오 예약 없이, 가지고 있는 사진 한 장으로 품격 있는 마지막을 준비하세요.
 
 ---
 
-# PR Log
+## 🌟 핵심 가치 (Core Values)
 
-## PR1 – Initial UI Scaffold
+### 1. 압도적인 화질 (Replicate FLUX Pro)
+기존 무료 AI 서비스들의 흐릿하고 어색한 품질을 넘어섰습니다.
+- **8K급 초고해상도**: 대형 액자로 인화해도 손색없는 선명함을 자랑합니다.
+- **한국형 디테일**: 한복의 질감, 은은한 조명, 정중한 표정까지 완벽하게 구현했습니다.
 
-### Objective
-Create the basic photo upload UI.
-
-### Implemented
-- Photo upload button
-- Drag & drop area
-- Image preview
-- Remove image option
-
-### Next Step
-Add client-side validation.
+### 2. 철저한 프라이버시 (Zero-Retention)
+가장 민감할 수 있는 사진 데이터, 서버에 **아무것도 남기지 않습니다.**
+- **즉시 파기**: 업로드된 원본 사진은 AI 변환 즉시 영구 삭제됩니다.
+- **기록 없음**: 생성된 결과물은 파일로 저장되지 않고, 오직 사용자 브라우저에서만 잠시 확인 가능합니다.
 
 ---
 
-## PR2a – Client-side File Validation
+## 🛠️ 개발 여정 (Development Journey)
 
-### Objective
-Implement client-side validation before server upload.
+이 서비스가 어떻게 발전해왔는지 기록합니다.
 
-### Implemented
-- 5MB file size limit  
-- JPG/PNG type restriction  
-- Error message for invalid files  
-- Store selected file in state for future API usage  
+### 📍 [PR4] AI 품질 혁신 & 보안 강화 (Current)
+**"스튜디오급 퀄리티를 무료로 구현하다"**
+- **Frontend (눈)**: 기존의 저화질·왜곡 문제를 해결하고, 실제 사용 가능한 수준의 **초고화질(Replicate FLUX)** 엔진을 탑재했습니다. 생성 시간(30~50초)이 다소 걸리지만, 기다릴 가치가 있는 결과물이 나옵니다.
+- **Backend (머리)**: 구글 Gemini 유료화 이슈를 해결하고, 서버 디스크에 어떤 흔적도 남기지 않는 **'Zero-Retention'** 기술을 완성했습니다.
 
-### Next Step
-PR2b will connect file upload to server storage.
+### 📍 [PR3] 서비스 경험 설계 (Prototype)
+**"기다림의 미학을 설계하다"**
+- 실제 AI 도입 전, 사용자가 사진을 올리고 결과를 기다리는 전체 흐름을 먼저 정립했습니다.
+- 한국 장례식장에 맞는 검은색 리본과 프레임 디자인을 적용하여 정중한 분위기를 연출했습니다.
 
----
+### 📍 [PR2] 파일 전송 시스템 (Upload)
+**"안전하게 전달하다"**
+- 사용자의 소중한 사진이 서버로 안전하게 전송되는 통로를 구축했습니다.
+- 5MB 용량 제한 등 기본적인 안전장치를 마련하여 시스템을 보호했습니다.
 
-## PR2b – Server Upload Handling
-
-### Objective
-Enable actual file transmission from client to server.
-
-### Implemented
-- **Backend**: Node.js Express server + Multer (`server.js`)
-- **Frontend**: Fetch API logic to send `FormData` (`script.js`)
-- **Storage**: Files saved to local `uploads/` directory
-- **UX**: Loading state ("업로드 중...") and success/failure alerts
-
-### Next Step
-PR3a will simulate the AI transformation flow.
+### 📍 [PR1] 첫 걸음 (UI Scaffold)
+**"시작하다"**
+- 직관적인 드래그 앤 드롭 UI를 구축하여 누구나 쉽게 접근할 수 있도록 했습니다.
 
 ---
 
-## PR3a – Mock AI Generation Flow (Korean Standard)
-
-### Objective
-AI 연동 전 단계로, 한국 정서에 맞는 "AI 변환 흐름" 프로토타입을 구축하고 UI/UX를 개선합니다.
-
-### Implemented
-- **Backend (Mock API)**:
-    - `/generate` 엔드포인트 구현: 실제 AI 연동 전, 4초의 대기 시간을 가져 시각적 흐름 제공.
-    - **보안 강화**: 서버 측(Multer)에서도 5MB 용량 제한을 강제하여 비정상적인 업로드 차단.
-- **Frontend (UI/UX)**:
-    - **로딩 최적화**: 생성 중에는 기존 업로드 UI를 숨기고 "AI가 영정사진을 생성 중입니다..."라는 메시지와 함께 몰입감 있는 로딩 상태 제공.
-    - **결과 화면 (Result View)**: 생성이 완료되면 업로드 화면을 대체하여 결과 이미지를 크게 보여주는 전용 뷰 구현.
-    - **한국형 프로토타입 반영**: 한국 장례 표준인 **검은색 프레임**과 **상단 사선 리본**이 적용된 정중한 영정사진 샘플 이미지 적용.
-    - **초기화 기능**: "다른 사진으로 시도하기" 기능을 추가하여 페이지 새로고침 없이 연속 작업 가능하도록 개선.
-
-### Why
-비용이 발생하는 실제 AI API 연동 전, 한국 사용자가 기대하는 최종 결과물의 형태와 서비스 흐름을 완벽히 검증하기 위함입니다.
-
-### Next Step
-PR3b에서 실제 AI 모델(OpenAI/Gemini 등)을 연동하여 이미지 변환을 구현합니다.
-
----
-
-## PR4 – AI 품질 혁신 & 프라이버시 (Replicate FLUX)
-
-### Objective
-"나노바나나 프로"급(초고화질) 영정사진을 무료로 생성하고, 사용자의 데이터가 서버에 절대 남지 않도록 보안을 강화합니다.
-
-### Implemented
-
-#### 🎨 Frontend (눈에 보이는 변화)
-- **압도적인 화질**: 기존 흐릿했던 결과물 대신, **8K급 초고해상도** 영정사진을 받아볼 수 있습니다.
-- **한국형 디테일**: 한복의 질감, 은은한 조명, 정중한 표정이 완벽하게 구현됩니다. (프롬프트 최적화 완료)
-- **속도**: 고화질 변환을 위해 약 30~50초 정도 소요되지만, 기다릴 가치가 있는 결과물이 나옵니다.
-
-#### ⚙️ Backend (보이지 않는 기술)
-- **AI 엔진 교체**: 
-    - 기존: Hugging Face (품질 낮음) / Gemini Imagen 4 (유료)
-    - **변경**: **Replicate FLUX Pro 1.1** (무료 티어 지원 + 최상급 품질)
-- **Zero-Retention 프라이버시 시스템**:
-    1. 사진 업로드 → AI 변환 → **서버에서 원본 즉시 자동 삭제**.
-    2. 결과 사진 → **파일로 저장 안 함**.
-    3. 오직 브라우저 메모리상에서만 잠시 보여지고 사라집니다. (서버 디스크에 흔적 0%)
-- **인프라**: Node.js 버전을 최신(v20)으로 업그레이드하여 안정성을 높였습니다.
-
-### Why
-가장 중요한 '마지막 사진'인 만큼 최고의 품질을 제공해야 하며, 민감한 개인정보인 만큼 절대 저장되지 않아야 한다는 원칙을 지켰습니다.
+## 💻 Tech Stack (기술 스택)
+- **AI Engine**: Replicate FLUX 1.1 Pro (Free Tier)
+- **Backend**: Node.js v20 (Express)
+- **Frontend**: Vanilla JS / CSS
