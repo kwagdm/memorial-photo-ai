@@ -39,6 +39,29 @@
                     </div>
                 </div>
             </section>
+            
+            <div class="guidelines">
+                <h4>📸 좋은 결과를 얻으려면?</h4>
+                <ul>
+                    <li>✅ 정면 얼굴 사진 (1인)</li>
+                    <li>✅ 얼굴이 화면의 30% 이상 차지 (고해상도 권장)</li>
+                    <li>❌ 선글라스/마스크/모자 착용 지양</li>
+                    <li>❌ 너무 작거나 흐릿한 사진 불가 (최소 512px)</li>
+                </ul>
+            </div>
+
+            <div class="consent-section">
+                <label class="consent-label">
+                    <input type="checkbox" id="consentCheckbox">
+                    <span class="custom-checkbox"></span>
+                    <span class="consent-text">
+                        [필수] <a href="docs/TERMS.md" target="_blank" class="legal-link">이용약관</a> 및 
+                        <a href="docs/PRIVACY.md" target="_blank" class="legal-link">개인정보 처리방침</a>에 동의하며, 
+                        업로드한 사진의 초상권 보유를 확인합니다.
+                    </span>
+                </label>
+                <p class="consent-subtext">* 사진은 AI 변환 즉시 영구 삭제되며 저장되지 않습니다.</p>
+            </div>
 
             <button id="generateBtn" class="generate-btn" disabled>
                 <span class="btn-text">영정사진 생성하기</span>
@@ -47,19 +70,39 @@
             </div>
 
             <section class="result-section hidden" id="resultView">
-                <div class="result-display">
-                    <div class="result-frame">
-                        <img id="finalResultImage" src="" alt="Generated Memorial Photo">
+                <div class="result-header">
+                    <h2>생성 완료</h2>
+                    <p>AI가 소중한 분의 모습을 정성껏 복원했습니다.</p>
+                </div>
+
+                <div class="comparison-container">
+                    <div class="result-card original">
+                        <span class="label">원본 사진</span>
+                        <div class="image-wrapper">
+                            <img id="originalImageDisplay" src="" alt="Original Photo">
+                        </div>
                     </div>
-                    <div class="action-footer">
-                        <button id="downloadBtn" class="secondary-btn">다운로드</button>
-                        <button id="resetBtn" class="text-link-btn">다른 사진으로 시도하기</button>
+                    <div class="arrow-divider">→</div>
+                    <div class="result-card generated">
+                        <span class="label">영정사진 (AI)</span>
+                        <div class="image-wrapper">
+                            <img id="finalResultImage" src="" alt="Generated Memorial Photo">
+                        </div>
                     </div>
+                </div>
+
+                <div class="action-footer">
+                    <button id="downloadBtn" class="primary-action-btn">
+                        <span class="icon">⬇️</span> 이미지 다운로드
+                    </button>
+                    <button id="resetBtn" class="text-link-btn">다른 사진으로 다시하기</button>
                 </div>
             </section>
         </div>
     </main>
 
+    <!-- Face API (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

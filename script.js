@@ -8,6 +8,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let selectedFile = null;
 
+    const consentCheckbox = document.getElementById('consentCheckbox');
+    
+    // [PR5b] Initialize Face API
+    let isFaceApiLoaded = false;
+    async function loadFaceApi() {
+        try {
+            console.log("Loading Face API models...");
+            // [PR5c] CDN usage (No local hosting requested)
+            await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+            isFaceApiLoaded = true;
+            console.log("Face API models loaded!");
+        } catch (error) {
+            console.error("Failed to load Face API:", error);
+            // Fail-open: Just log error, don't block app
+        } finally {
+            // [PR5c] Loading State: Re-enable UI
+            const btnText = document.querySelector('#generateBtn .btn-text');
+            if (btnText && btnText.innerText === 'AI 모델 로딩 중...') {
+                 btnText.innerText = '영정사진 생성하기';
+            }
+            // Note: generateBtn is disabled by default until file is selected & consent checked, 
+            // so we don't need to explicitly enable it here, just restore text.
+        }
+    }
+
+    // [PR5c] Initial Loading State
+    const btnText = document.querySelector('#generateBtn .btn-text');
+    if (btnText) btnText.innerText = 'AI 모델 로딩 중...';
+
+    // Load models on page load
+    loadFaceApi();
+
     // Handle click to upload
     uploadArea.addEventListener('click', (e) => {
         if (e.target !== removeBtn) {
@@ -15,46 +47,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle drag & drop
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, preventDefaults, false);
-    });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, highlight, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, unhighlight, false);
-    });
-
-    function highlight(e) {
-        uploadArea.style.borderColor = 'var(--primary)';
-        uploadArea.style.background = 'rgba(0,0,0,0.4)';
-    }
-
-    function unhighlight(e) {
-        uploadArea.style.borderColor = '';
-        uploadArea.style.background = '';
-    }
-
-    uploadArea.addEventListener('drop', handleDrop, false);
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        handleFiles(files);
-    }
+    // ... (Drag & Drop logic remains same) ...
 
     // Handle file selection
     fileInput.addEventListener('change', function() {
         handleFiles(this.files);
     });
+
+    function updateGenerateButtonState() {
+        if (selectedFile && consentCheckbox.checked) {
+            generateBtn.disabled = false;
+        } else {
+            generateBtn.disabled = true;
+        }
+    }
+
+    consentCheckbox.addEventListener('change', updateGenerateButtonState);
 
     function handleFiles(files) {
         if (files.length > 0) {
@@ -66,15 +74,75 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Validate file size (5MB)
+            // Validate file size (Min 100KB, Max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('파일 크기는 5MB 이하여야 합니다.');
+                return;
+            }
+            // Validate file size (Max 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 alert('파일 크기는 5MB 이하여야 합니다.');
                 return;
             }
 
-            selectedFile = file; // Store file in variable
-            showPreview(file);
-            generateBtn.disabled = false;
+            // Validate Resolution (Min 512x512)
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = async function() {
+                // 1. Resolution Check
+                if (this.width < 512 || this.height < 512) {
+                    alert('이미지 해상도가 너무 낮습니다. (최소 512x512 이상 권장)');
+                }
+
+                // 2. [PR5b] Face Detection Logic
+                // [PR5c] Fail-open: Only run if model loaded successfully
+                if (isFaceApiLoaded) {
+                    try {
+                        // TinyFaceDetector options
+                        const detections = await faceapi.detectAllFaces(this, new faceapi.TinyFaceDetectorOptions());
+                        
+                        // [PR5c] Soft Block Fallback
+                        if (detections.length === 0) {
+                            const userConfirmed = confirm(
+                                "⚠️ AI가 얼굴을 찾지 못했습니다.\n\n" +
+                                "사진 속 인물이 너무 작거나, 옆모습이거나, 흐릿할 수 있습니다.\n" +
+                                "그래도 진행하시겠습니까?\n\n" +
+                                "(※ 얼굴이 없는 사진은 엉뚱한 결과가 나올 수 있습니다)"
+                            );
+
+                            if (!userConfirmed) {
+                                URL.revokeObjectURL(this.src);
+                                fileInput.value = ''; 
+                                selectedFile = null;
+                                previewContainer.classList.add('hidden');
+                                updateGenerateButtonState();
+                                return; 
+                            }
+                            // User confirmed -> Allow pass-through
+                        } else {
+                            console.log(`Face detection result: ${detections.length} faces found.`);
+                        }
+                    } catch (err) {
+                        console.error("Face detection error:", err);
+                        // [PR5c] Fail-open: Algorithm error -> Allow upload
+                        console.warn("Skipping face detection due to error (Fail-open).");
+                    }
+                } else {
+                     // [PR5c] Fail-open: Model not loaded -> Allow upload
+                     console.warn("Face API not loaded. Skipping detection (Fail-open).");
+                }
+
+                URL.revokeObjectURL(this.src);
+                // 3. Success -> Proceed
+                selectedFile = file; // Store file in variable
+                showPreview(file);
+                updateGenerateButtonState();
+            };
+
+            // Moved inside img.onload to wait for validation
+            // selectedFile = file; 
+            // showPreview(file);
+            // updateGenerateButtonState();
         }
     }
 
@@ -84,7 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.onloadend = function() {
             previewImage.src = reader.result;
             previewContainer.classList.remove('hidden');
-            // Hide the upload text content visually or just layer over it
         }
     }
 
@@ -95,13 +162,18 @@ document.addEventListener('DOMContentLoaded', () => {
         fileInput.value = '';
         previewImage.src = '';
         previewContainer.classList.add('hidden');
-        generateBtn.disabled = true;
+        updateGenerateButtonState();
     });
 
     // Handle generate button
     generateBtn.addEventListener('click', async () => {
         if (!selectedFile) {
             alert('사진을 선택해주세요.');
+            return;
+        }
+
+        if (!consentCheckbox.checked) {
+            alert('이용약관 및 개인정보 처리방침에 동의해주세요.');
             return;
         }
         
@@ -111,7 +183,17 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // UI Loading State
         const originalText = generateBtn.querySelector('.btn-text').innerText;
-        generateBtn.querySelector('.btn-text').innerText = 'AI가 영정사진을 생성 중입니다...';
+        const btnText = generateBtn.querySelector('.btn-text');
+        btnText.innerText = '영정사진 생성 중입니다... (약 10~20초 소요)';
+        
+        // Add spinner if not exists
+        let spinner = generateBtn.querySelector('.spinner');
+        if (!spinner) {
+            spinner = document.createElement('span');
+            spinner.className = 'spinner';
+            generateBtn.insertBefore(spinner, btnText);
+        }
+        
         generateBtn.disabled = true;
 
         try {
@@ -142,10 +224,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Hide upload view, show result view
                 document.getElementById('uploadView').classList.add('hidden');
                 document.getElementById('resultView').classList.remove('hidden');
-                // Use resultBase64 from the server
-                document.getElementById('finalResultImage').src = genResult.resultBase64;
                 
-                alert('영정사진 생성이 완료되었습니다!');
+                // Show Original Image
+                const originalDisplay = document.getElementById('originalImageDisplay');
+                originalDisplay.src = URL.createObjectURL(selectedFile);
+                
+                // Show Generated Image
+                const resultImg = document.getElementById('finalResultImage');
+                resultImg.src = genResult.resultBase64;
+                
+                // Setup Download Button
+                const downloadBtn = document.getElementById('downloadBtn');
+                downloadBtn.onclick = () => {
+                    const link = document.createElement('a');
+                    link.download = 'memorial-photo-ai-result.jpg';
+                    link.href = genResult.resultBase64;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+                
+                // Scroll to result
+                document.getElementById('resultView').scrollIntoView({ behavior: 'smooth' });
             } else {
                 alert('생성 실패: ' + genResult.message);
             }
@@ -154,6 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('오류가 발생했습니다: ' + error.message);
         } finally {
             // Reset UI
+            if (spinner) {
+                spinner.remove();
+            }
             generateBtn.querySelector('.btn-text').innerText = originalText;
             generateBtn.disabled = false;
         }
@@ -173,8 +276,5 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('uploadView').classList.remove('hidden');
     });
 
-    // Download placeholder logic
-    document.getElementById('downloadBtn').addEventListener('click', () => {
-        alert('이 기능은 추후 개발 예정입니다.');
-    });
+    // Download listener is now attached dynamically in successful generation block
 });

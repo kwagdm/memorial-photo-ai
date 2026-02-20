@@ -75,8 +75,6 @@ app.post('/generate', async (req, res) => {
         });
     }
 
-    // [IMPORTANT] GEMINI_API_KEY check moved here to ensure we can handle cleanup if this fails
-    const geminiApiKey = process.env.GEMINI_API_KEY;
 
     if (!lastUploadedFile) {
         return res.status(400).json({ success: false, message: '먼저 사진을 업로드해주세요.' });
@@ -88,62 +86,104 @@ app.post('/generate', async (req, res) => {
             throw new Error('업로드된 파일을 찾을 수 없습니다.');
         }
 
-        // [REPLICATE] Check API token
+        // [AI Config] Load API tokens
         const replicateToken = process.env.REPLICATE_API_TOKEN;
-        if (!replicateToken) {
-            throw new Error('.env 파일에 REPLICATE_API_TOKEN을 설정해주세요.');
+        const falKey = process.env.FAL_KEY;
+
+        if (!falKey) {
+            throw new Error('.env 파일에 FAL_KEY를 설정해주세요.');
         }
 
-        // Korean Memorial Portrait optimized prompt
-        const prompt = "A highly detailed, photorealistic black and white memorial portrait photograph of a dignified Korean elderly person, wearing traditional high-quality hanbok with intricate silk patterns, professional studio lighting with soft shadows, plain neutral grey background, sharp focus on facial features, respectful and calm expression, 8k resolution, professional photography, cinematic quality";
+        console.log(`[AI API] Processing file: ${imagePath}`);
+        
+        // Convert uploaded image to data URI
+        const fileBuffer = fs.readFileSync(imagePath);
+        const mimeType = lastUploadedFile.endsWith('.png') ? 'image/png' : 'image/jpeg';
+        const base64Image = fileBuffer.toString('base64');
+        const dataURI = `data:${mimeType};base64,${base64Image}`;
 
+        /* --- Replicate (Rollback Support) --- */
         const Replicate = (await import('replicate')).default;
         const replicate = new Replicate({ auth: replicateToken });
         
-        console.log(`[AI API] Calling Replicate FLUX Pro (High Quality)`);
-        console.log(`[AI API] Current Usage: ${usageData.count + 1}/2`);
+        // --- PHOTOMAKER (Legacy/Reference) ---
+        // const output = await replicate.run(
+        //     "tencentarc/photomaker:ddfc2b08d209f9fa8c1eca692712918bd449f695dabb4a958da31802a9570fe4",
+        //     {
+        //         input: {
+        //             input_image: dataURI, 
+        //             prompt: "...",
+        //             negative_prompt: "...",
+        //             num_steps: 50,
+        //             style_strength_ratio: 20,
+        //             num_outputs: 1,
+        //             guidance_scale: 5
+        //         }
+        //     }
+        // );
         
-        const output = await replicate.run(
-            "black-forest-labs/flux-1.1-pro",
-            {
-                input: {
-                    prompt: prompt,
-                    aspect_ratio: "1:1",
-                    output_format: "jpg",
-                    output_quality: 95,
-                    safety_tolerance: 2,
-                    prompt_upsampling: true
-                }
-            }
-        );
+        // --- FAL.AI INSTANT-ID (Identity Preservation Solved) ---
+        // Using fal-ai/instantid for fast, identity-preserving generation
+        // Documentation: https://fal.ai/models/fal-ai/instantid
+        console.log(`[AI API] Calling Fal.ai (fal-ai/instantid)...`);
 
-        if (!output || !output.toString()) {
-            throw new Error('이미지 데이터를 생성하지 못했습니다.');
+        // Fal.ai client initialization
+        const fal = await import("@fal-ai/serverless-client");
+        
+        // Fal.ai expects 'image_url' (supports data URI)
+        const result = await fal.subscribe("fal-ai/instantid", {
+            input: {
+                face_image_url: dataURI, // Corrected parameter name
+                prompt: "A professional black and white memorial portrait photograph of an 80-year-old Korean man, elderly person with natural aging, subtle wrinkles, gray hair, dignified solemn expression, wearing formal dark suit, studio lighting with soft shadows, plain neutral grey background, photorealistic, high quality, 8k, highly detailed",
+                negative_prompt: "young, teenager, child, smoothing, cartoon, extra limbs, distorted eyes, blurry, low quality",
+                ip_adapter_scale: 0.8, // Identity strength
+                controlnet_conditioning_scale: 0.8
+            },
+            logs: true,
+            onQueueUpdate: (update) => {
+                if (update.status === "IN_PROGRESS") {
+                    update.logs.map((log) => log.message).forEach(console.log);
+                }
+            },
+        });
+
+        console.log("[AI API] Fal.ai Output received:", result);
+
+        // Fal.ai returns: { image: { url: "..." } } for this endpoint
+        let imageUrl = null;
+        if (result && result.image && result.image.url) {
+            imageUrl = result.image.url;
+        } else if (result && result.images && result.images[0] && result.images[0].url) {
+             imageUrl = result.images[0].url; // Fallback
+        } else {
+            throw new Error("AI 응답에 이미지 URL이 없습니다. Response: " + JSON.stringify(result));
         }
 
-        // Replicate returns a URL, we need to fetch and convert to base64
+        // Fetch result for proxying (Privacy: Zero Retention)
         const fetch = (await import('node-fetch')).default;
-        const imageUrl = output.toString();
         const imageResponse = await fetch(imageUrl);
         const imageBuffer = await imageResponse.buffer();
         const base64ImageOutput = imageBuffer.toString('base64');
-
-        // [Privacy] 디스크에 저장하지 않고 바로 메모리의 Base64 전달
+        
         usageData.count += 1;
         fs.writeFileSync(usageFilePath, JSON.stringify(usageData));
         
-        console.log(`[AI Success] Replicate FLUX Generation complete. Zero-Retention applied. Usage updated: ${usageData.count}/2`);
-
-        res.json({ 
-            success: true, 
+        console.log(`[AI Success] Fal.ai InstantID Generation complete. Zero-Retention applied. Usage updated: ${usageData.count}/2`);
+        
+        // Respond to client with Base64 as before
+        res.json({
+            success: true,
             resultBase64: `data:image/jpeg;base64,${base64ImageOutput}`
         });
 
     } catch (error) {
-        console.error('[CRITICAL AI ERROR]', error);
+        console.error('[CRITICAL AI ERROR]', JSON.stringify(error, null, 2));
+        if (error.body && error.body.detail) {
+             console.error('[AI ERROR DETAIL]', JSON.stringify(error.body.detail, null, 2));
+        }
         res.status(500).json({ 
             success: false, 
-            message: 'AI 연결 중 오류가 발생했습니다: ' + error.message 
+            message: 'AI 연결 중 오류가 발생했습니다: ' + (error.message || 'Unknown Error') 
         });
     } finally {
         // [Zero-Retention] 성공/실패 상관없이 무조건 원본 파일 삭제
