@@ -44,13 +44,18 @@
                 <h4>📸 좋은 결과를 얻으려면?</h4>
                 <ul>
                     <li>✅ 정면 얼굴 사진 (1인)</li>
-                    <li>✅ 얼굴이 화면의 30% 이상 차지 (고해상도 권장)</li>
+                    <li>✅ 얼굴이 화면의 20% 이상 차지 (필수)</li>
                     <li>❌ 선글라스/마스크/모자 착용 지양</li>
                     <li>❌ 너무 작거나 흐릿한 사진 불가 (최소 512px)</li>
                 </ul>
             </div>
 
+                <div class="guidance-banner">
+                    <p>✨ 가장 품격 있는 <b>현대적 정장 스타일</b>로 자동 보정됩니다.</p>
+                </div>
+
             <div class="consent-section">
+
                 <label class="consent-label">
                     <input type="checkbox" id="consentCheckbox">
                     <span class="custom-checkbox"></span>
@@ -77,14 +82,18 @@
 
                 <div class="comparison-container">
                     <div class="result-card original">
-                        <span class="label">원본 사진</span>
+                        <div class="result-label-row">
+                            <span class="label">원본 사진 (Before)</span>
+                        </div>
                         <div class="image-wrapper">
                             <img id="originalImageDisplay" src="" alt="Original Photo">
                         </div>
                     </div>
                     <div class="arrow-divider">→</div>
                     <div class="result-card generated">
-                        <span class="label">영정사진 (AI)</span>
+                        <div class="result-label-row">
+                            <span class="label">영정사진 (After)</span>
+                        </div>
                         <div class="image-wrapper">
                             <img id="finalResultImage" src="" alt="Generated Memorial Photo">
                         </div>
@@ -100,6 +109,32 @@
             </section>
         </div>
     </main>
+
+    <!-- Policy Modal -->
+    <div id="policyModal" class="modal-overlay hidden">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <span class="modal-icon">⚠️</span>
+                <h3>사진 변환 정책 미달</h3>
+            </div>
+            <div class="modal-body">
+                <p>업로드하신 사진은 당사의 <strong>품질 정책</strong>에 따라 변환이 불가능합니다.</p>
+                <div class="policy-failure-reason">
+                    <p id="policyReasonText">얼굴이 전체 사진에서 차지하는 비중이 너무 작습니다.</p>
+                </div>
+                <div class="policy-guide">
+                    <p>📸 <strong>해결 방법:</strong></p>
+                    <ul>
+                        <li>얼굴이 화면의 20% 이상 나오도록 <strong>가까이서 찍은 사진</strong>을 사용해 주세요.</li>
+                        <li>배경이 너무 많이 포함된 전신 사진보다는 <strong>상반신 위주의 증명사진 형태</strong>가 가장 좋습니다.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="closePolicyModal" class="primary-action-btn">확인</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Face API (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>

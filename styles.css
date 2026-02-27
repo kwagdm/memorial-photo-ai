@@ -248,8 +248,31 @@ body {
     transition: background 0.2s;
 }
 
+/* Guidance Banner */
+.guidance-banner {
+    background: rgba(157, 139, 108, 0.1);
+    border: 1px solid rgba(157, 139, 108, 0.2);
+    border-radius: 12px;
+    padding: 14px;
+    margin: 24px 0;
+    text-align: center;
+}
+
+.guidance-banner p {
+    font-size: 13px;
+    color: var(--primary);
+    margin: 0;
+    font-weight: 400;
+}
+
+.guidance-banner b {
+    font-weight: 600;
+    color: #fff;
+}
+
 /* Consent Section */
 .consent-section {
+
     margin-top: 20px;
     margin-bottom: 20px;
     text-align: left;
@@ -370,47 +393,79 @@ body {
 
 .comparison-container {
     display: flex;
+    flex-direction: column; /* Force vertical on mobile */
     align-items: center;
     justify-content: center;
-    gap: 15px;
+    gap: 24px;
     margin-bottom: 30px;
+    width: 100%;
+    max-width: 100%;
+}
+
+@media (min-width: 768px) { /* Only side-by-side on Tablets/Desktop */
+    .comparison-container {
+        flex-direction: row;
+        gap: 20px;
+    }
 }
 
 .result-card {
-    flex: 1;
+    width: 100%;
+    max-width: 320px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
 }
 
-.result-card .label {
-    font-size: 12px;
-    color: var(--text-sub);
-    font-weight: 500;
+/* Result Header Row */
+.result-label-row {
+    display: flex;
+    justify-content: center; /* Center labels for better symmetry */
+    align-items: center;
+    width: 100%;
+    margin-bottom: 12px;
 }
 
+.frame-toggle-btn {
+    background: rgba(157, 139, 108, 0.2);
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.frame-toggle-btn:hover {
+    background: var(--primary);
+    color: #fff;
+}
+
+/* Framed Wrapper */
 .image-wrapper {
     width: 100%;
-    aspect-ratio: 1/1; /* Square aspect ratio */
-    border-radius: 8px;
-    overflow: hidden;
-    background: #000;
+    max-width: 360px;
+    margin: 0 auto;
+    aspect-ratio: 4 / 5 !important;
+    border-radius: 12px;
+    overflow: hidden !important;
+    background: #0d0e12;
     border: 1px solid var(--glass-border);
     position: relative;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    padding: 0 !important; /* Phase 32: Force zero padding for full bleed */
 }
 
 .image-wrapper img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    object-fit: cover !important; /* Phase 31: Forced cover for absolute fill */
 }
 
-.result-card.generated .image-wrapper {
-    border: 2px solid var(--primary); /* Highlight generated image */
-    box-shadow: 0 0 20px rgba(157, 139, 108, 0.2);
-}
+/* Legacy frame logic removed for Phase 30 hybrid rendering stability */
 
 .arrow-divider {
     color: var(--text-sub);
@@ -485,4 +540,101 @@ body {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+/* Modal Base */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    max-width: 400px;
+    width: 90%;
+    padding: 30px !important;
+    animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalSlideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+    margin-bottom: 20px;
+}
+
+.modal-icon {
+    font-size: 40px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.modal-header h3 {
+    font-size: 1.25rem;
+    color: #fff;
+}
+
+.modal-body {
+    text-align: left;
+    margin-bottom: 25px;
+}
+
+.modal-body p {
+    font-size: 14px;
+    color: var(--text-sub);
+    line-height: 1.6;
+}
+
+.policy-failure-reason {
+    background: rgba(255, 69, 58, 0.1);
+    border: 1px solid rgba(255, 69, 58, 0.3);
+    padding: 12px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.policy-failure-reason p {
+    color: #ff453a;
+    font-weight: 500;
+    font-size: 13px;
+    text-align: center;
+}
+
+.policy-guide {
+    margin-top: 20px;
+}
+
+.policy-guide p {
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.policy-guide ul {
+    list-style: none;
+    padding: 0;
+}
+
+.policy-guide li {
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-bottom: 8px;
+    padding-left: 20px;
+    position: relative;
+}
+
+.policy-guide li::before {
+    content: '•';
+    position: absolute;
+    left: 5px;
+    color: var(--primary);
 }

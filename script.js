@@ -12,13 +12,22 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // [PR5b] Initialize Face API
     let isFaceApiLoaded = false;
+    const policyModal = document.getElementById('policyModal');
+    const closePolicyModal = document.getElementById('closePolicyModal');
+    const policyReasonText = document.getElementById('policyReasonText');
+
+    closePolicyModal.addEventListener('click', () => {
+        policyModal.classList.add('hidden');
+    });
     async function loadFaceApi() {
         try {
             console.log("Loading Face API models...");
             // [PR5c] CDN usage (No local hosting requested)
             await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+            await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+            await faceapi.nets.ageGenderNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
             isFaceApiLoaded = true;
-            console.log("Face API models loaded!");
+            console.log("Face API models loaded (Detection + Gender)!");
         } catch (error) {
             console.error("Failed to load Face API:", error);
             // Fail-open: Just log error, don't block app
@@ -101,27 +110,39 @@ document.addEventListener('DOMContentLoaded', () => {
                         // TinyFaceDetector options
                         const detections = await faceapi.detectAllFaces(this, new faceapi.TinyFaceDetectorOptions());
                         
-                        // [PR5c] Soft Block Fallback
-                        if (detections.length === 0) {
-                            const userConfirmed = confirm(
-                                "⚠️ AI가 얼굴을 찾지 못했습니다.\n\n" +
-                                "사진 속 인물이 너무 작거나, 옆모습이거나, 흐릿할 수 있습니다.\n" +
-                                "그래도 진행하시겠습니까?\n\n" +
-                                "(※ 얼굴이 없는 사진은 엉뚱한 결과가 나올 수 있습니다)"
-                            );
+                        // [Phase 9] Face Ratio Policy Check
+                        const faceBox = detections[0].box;
+                        const faceArea = faceBox.width * faceBox.height;
+                        const imageArea = this.width * this.height;
+                        const faceRatio = (faceArea / imageArea) * 100;
+                        const score = detections[0].score;
+                        
+                        console.log(`Face Analysis - Count: ${detections.length}, Ratio: ${faceRatio.toFixed(2)}%, Score: ${score.toFixed(2)}`);
 
-                            if (!userConfirmed) {
-                                URL.revokeObjectURL(this.src);
-                                fileInput.value = ''; 
-                                selectedFile = null;
-                                previewContainer.classList.add('hidden');
-                                updateGenerateButtonState();
-                                return; 
-                            }
-                            // User confirmed -> Allow pass-through
-                        } else {
-                            console.log(`Face detection result: ${detections.length} faces found.`);
+                        // 1. Multiple Face Policy
+                        if (detections.length > 1) {
+                            policyReasonText.innerText = "사진에 여러 명의 인물이 감지되었습니다. 1인 정면 사진만 변환 가능합니다.";
+                            policyModal.classList.remove('hidden');
+                            resetState();
+                            return;
                         }
+
+                        // Threshold: 20% (Unified Policy)
+                        if (faceRatio < 20) {
+                            policyReasonText.innerText = `얼굴 비중이 ${faceRatio.toFixed(1)}%로, 당사 품질 정책(20% 이상)에 미달합니다.`;
+                            policyModal.classList.remove('hidden');
+                            resetState();
+                            return;
+                        }
+
+                        // 3. Clarity Policy
+                        if (score < 0.7) {
+                            policyReasonText.innerText = "얼굴 인식이 불분명합니다. 더 선명한 사진을 사용해 주세요.";
+                            policyModal.classList.remove('hidden');
+                            resetState();
+                            return;
+                        }
+
                     } catch (err) {
                         console.error("Face detection error:", err);
                         // [PR5c] Fail-open: Algorithm error -> Allow upload
@@ -138,6 +159,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 showPreview(file);
                 updateGenerateButtonState();
             };
+
+            function resetState() {
+                URL.revokeObjectURL(img.src);
+                fileInput.value = ''; 
+                selectedFile = null;
+                previewContainer.classList.add('hidden');
+                updateGenerateButtonState();
+            }
 
             // Moved inside img.onload to wait for validation
             // selectedFile = file; 
@@ -214,13 +243,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const uploadResult = await uploadResponse.json();
 
-            // Second: Call generate endpoint (Mock AI)
+            // Second: Analyze Gender (Phase 34)
+            const btnText = document.querySelector('#generateBtn .btn-text');
+            const originalText = btnText.innerText;
+            btnText.innerText = '성별 분석 중...';
+
+            let detectedGender = 'male'; // Default
+            try {
+                const img = await faceapi.bufferToImage(selectedFile);
+                const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withAgeAndGender();
+                
+                if (detection) {
+                    detectedGender = detection.gender;
+                    console.log(`[Gender Detection] ${detectedGender} (${Math.round(detection.genderProbability * 100)}%)`);
+                }
+            } catch (err) {
+                console.error("Gender detection failed, using default:", err);
+            }
+
+            btnText.innerText = 'AI 영정사진 생성 중...';
+
+            // Third: Call generate endpoint
             const genResponse = await fetch('/generate', {
-                method: 'POST'
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    style: 'suit',
+                    gender: detectedGender // Pass detected gender
+                })
             });
+
             const genResult = await genResponse.json();
 
             if (genResult.success) {
+                // [DEBUG] Log Raw Model URLs for independent inspection
+                if (genResult.debug_info) {
+                    console.log('--- [DEBUG] Raw AI Output URLs ---');
+                    console.log('Step 1 (Base/75yr) URL:', genResult.debug_info.baseUrl);
+                    console.log('Step 2 (Final/80yr) URL:', genResult.debug_info.rawUrl);
+                    console.log('---------------------------------');
+                }
+
                 // Hide upload view, show result view
                 document.getElementById('uploadView').classList.add('hidden');
                 document.getElementById('resultView').classList.remove('hidden');
@@ -229,9 +296,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const originalDisplay = document.getElementById('originalImageDisplay');
                 originalDisplay.src = URL.createObjectURL(selectedFile);
                 
-                // Show Generated Image
+                // Show Generated Image with Cache-Busting (if not Data URI)
                 const resultImg = document.getElementById('finalResultImage');
-                resultImg.src = genResult.resultBase64;
+                const timestamp = new Date().getTime();
+                
+                if (genResult.resultBase64.startsWith('data:')) {
+                    // Data URIs are self-contained and don't cache like standard URLs
+                    resultImg.src = genResult.resultBase64;
+                } else {
+                    resultImg.src = `${genResult.resultBase64}?t=${timestamp}`;
+                }
                 
                 // Setup Download Button
                 const downloadBtn = document.getElementById('downloadBtn');
@@ -244,6 +318,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.body.removeChild(link);
                 };
                 
+                // Scroll to result
+                document.getElementById('resultView').scrollIntoView({ behavior: 'smooth' });
+
                 // Scroll to result
                 document.getElementById('resultView').scrollIntoView({ behavior: 'smooth' });
             } else {

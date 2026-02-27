@@ -40,8 +40,10 @@ const upload = multer({
 app.use(express.static('.'));
 app.use('/public', express.static('public'));
 
-// AI Generate endpoint (Real API Integration)
-app.post('/generate', async (req, res) => {
+// AI Generate endpoint (Advanced Synthesis Pipeline)
+app.post('/generate', express.json(), async (req, res) => {
+    const style = req.body.style || 'suit'; // 'suit' or 'hanbok'
+
     const today = new Date().toISOString().split('T')[0];
     const usageFilePath = path.join(__dirname, 'usage_log.json');
     
@@ -66,12 +68,12 @@ app.post('/generate', async (req, res) => {
         }
     }
 
-    // 3. Check daily limit (Condition 1: 2 calls/day)
-    if (usageData.count >= 2) {
-        console.warn(`[AI Safety] DAILY LIMIT REACHED (${usageData.count}/2). Request denied.`);
+    // 3. Check daily limit (Condition 1: 20 calls/day for development tuning)
+    if (usageData.count >= 20) {
+        console.warn(`[AI Safety] DAILY LIMIT REACHED (${usageData.count}/20). Request denied.`);
         return res.status(429).json({ 
             success: false, 
-            message: '일일 AI 호출 제한(2회)을 초과했습니다. 내일 다시 시도해주세요.' 
+            message: '일일 AI 호출 제한(20회)을 초과했습니다. 더 많은 테스트가 필요하시면 말씀해주세요.' 
         });
     }
 
@@ -114,66 +116,146 @@ app.post('/generate', async (req, res) => {
         //             input_image: dataURI, 
         //             prompt: "...",
         //             negative_prompt: "...",
-        //             num_steps: 50,
+        //             num_steps: 35,
         //             style_strength_ratio: 20,
         //             num_outputs: 1,
-        //             guidance_scale: 5
+        //             guidance_scale: 3.0
         //         }
         //     }
         // );
         
-        // --- FAL.AI INSTANT-ID (Identity Preservation Solved) ---
-        // Using fal-ai/instantid for fast, identity-preserving generation
-        // Documentation: https://fal.ai/models/fal-ai/instantid
-        console.log(`[AI API] Calling Fal.ai (fal-ai/instantid)...`);
-
-        // Fal.ai client initialization
-        const fal = await import("@fal-ai/serverless-client");
+        const { fal } = await import("@fal-ai/client");
         
-        // Fal.ai expects 'image_url' (supports data URI)
-        const result = await fal.subscribe("fal-ai/instantid", {
+        // --- STEP 1: RAW BASELINE SYNTHESIS (Clean & Plain) ---
+        const gender = req.body.gender || 'male';
+        const isFemale = gender === 'female';
+        const genderTerm = isFemale ? "woman" : "man";
+        
+        console.log(`[PROCESS] Target Gender: ${gender}`);
+
+        // --- STEP 1: IDENTITY-PRESERVING BASE SYNTHESIS ---
+        // Goal: Professional photographic baseline with zero artistic artifacts.
+        console.log(`[AI STEP 1] Generating Raw Baseline (${genderTerm}, 70-75 yrs, CFG 3.0)...`);
+        
+        const basePrompt = (style === 'hanbok')
+            ? `A plain studio portrait of a dignified Korean ${genderTerm}, age 70-75, wearing traditional formal Hanbok, soft natural lighting, neutral grey background, realistic plain skin texture, soft aged features, un-edited photograph`
+            : `A professional, high-resolution studio portrait of a Korean ${genderTerm}, age 70, focusing on a calm and solemn expression. 35mm lens, f/8, raw photography texture, solid dark grey background, soft Rembrandt lighting. Wearing a formal black mourning attire.`;
+
+        const negativePrompt = "red circle, rising sun, frame, ribbon, border, illustration, painting, 3d render, anime, cartoon, sketch, smooth skin, plastic texture, glowing skin, vibrant colors, young, middle-aged, black hair, blurry, digital art, makeup, artificial lighting, distorted face.";
+
+        const baseResult = await fal.subscribe("fal-ai/instantid", {
             input: {
-                face_image_url: dataURI, // Corrected parameter name
-                prompt: "A professional black and white memorial portrait photograph of an 80-year-old Korean man, elderly person with natural aging, subtle wrinkles, gray hair, dignified solemn expression, wearing formal dark suit, studio lighting with soft shadows, plain neutral grey background, photorealistic, high quality, 8k, highly detailed",
-                negative_prompt: "young, teenager, child, smoothing, cartoon, extra limbs, distorted eyes, blurry, low quality",
-                ip_adapter_scale: 0.8, // Identity strength
-                controlnet_conditioning_scale: 0.8
-            },
-            logs: true,
-            onQueueUpdate: (update) => {
-                if (update.status === "IN_PROGRESS") {
-                    update.logs.map((log) => log.message).forEach(console.log);
-                }
-            },
+                face_image_url: dataURI,
+                prompt: basePrompt,
+                negative_prompt: negativePrompt,
+                ip_adapter_scale: 0.6,
+                controlnet_conditioning_scale: 0.4,
+                num_inference_steps: 30,
+                guidance_scale: 3.0 // Maintained at 3.0 for color stability
+            }
         });
 
-        console.log("[AI API] Fal.ai Output received:", result);
+        const baseImageUrl = baseResult.data.image ? baseResult.data.image.url : baseResult.data.images[0].url;
+        console.log(`[AI SUCCESS] Raw Base Synthesis Complete: ${baseImageUrl}`);
 
-        // Fal.ai returns: { image: { url: "..." } } for this endpoint
-        let imageUrl = null;
-        if (result && result.image && result.image.url) {
-            imageUrl = result.image.url;
-        } else if (result && result.images && result.images[0] && result.images[0].url) {
-             imageUrl = result.images[0].url; // Fallback
-        } else {
-            throw new Error("AI 응답에 이미지 URL이 없습니다. Response: " + JSON.stringify(result));
+        // --- STEP 2: PERSON-FOCUSED AGING TRANSFORMATION (Age 80) ---
+        // Goal: High-fidelity aging in a pure photographic space, focusing entirely on the person.
+        console.log(`[AI STEP 2] Person-Focused Refinement (${genderTerm}, Denoise 0.50, CFG 3.0)...`);
+        
+        const refinePrompt = `A professional portrait of an 80-year-old elderly Korean ${genderTerm}, deep wrinkles, sagging skin, white hair, 35mm lens, raw photo texture, solid dark grey background.`;
+
+        const refineResult = await fal.subscribe("fal-ai/fast-sdxl/image-to-image", {
+            input: {
+                image_url: baseImageUrl,
+                prompt: refinePrompt,
+                negative_prompt: negativePrompt,
+                strength: 0.50, // Fixed for Stability (Phase 28)
+                num_inference_steps: 30, 
+                guidance_scale: 3.0 // Fixed for Stability (Phase 28)
+            }
+        });
+
+        const finalResult = refineResult.data.image ? refineResult.data.image : refineResult.data.images[0];
+        if (!finalResult) throw new Error("Raw aging refinement failed");
+
+        const agedImageUrl = finalResult.url;
+        console.log(`[AI SUCCESS] Raw Aging Complete. Proceeding to Hybrid Rendering...`);
+
+        // --- STEP 3: FACE SWAP ONTO GENDER-SPECIFIC SUIT TEMPLATE ---
+        // Goal: Ensure the suit and background are museum-quality by swapping the aged face onto a template.
+        console.log(`[AI STEP 3] Face-Swapping onto ${genderTerm} Suit Template...`);
+        const templateFilename = isFemale ? 'memorial_template_female.png' : 'memorial_template.png';
+        const templatePath = path.join(__dirname, templateFilename);
+        const templateBuffer = fs.readFileSync(templatePath);
+        const templateBase64 = "data:image/png;base64," + templateBuffer.toString('base64');
+
+        const swapResult = await fal.subscribe("fal-ai/face-swap", {
+            input: {
+                base_image_url: templateBase64,
+                swap_image_url: agedImageUrl
+            }
+        });
+
+        if (!swapResult.data || !swapResult.data.image) {
+             console.error('[AI ERROR] Face Swap Failed Structure:', JSON.stringify(swapResult, null, 2));
+             throw new Error("Face swap response structure invalid");
         }
 
-        // Fetch result for proxying (Privacy: Zero Retention)
-        const fetch = (await import('node-fetch')).default;
-        const imageResponse = await fetch(imageUrl);
-        const imageBuffer = await imageResponse.buffer();
-        const base64ImageOutput = imageBuffer.toString('base64');
+        const swappedImageUrl = swapResult.data.image.url;
+        console.log(`[AI SUCCESS] Face Swap Complete: ${swappedImageUrl}`);
+
+        // --- STEP 4: CANVAS COMPOSITE (WOODEN FRAME + RIBBONS) ---
+        // Goal: Automated assembly of the final memorial photo for printing.
+        console.log(`[HYBRID STEP 4] Compositing Final Framed Portrait (Phase 28 Stable Version)...`);
+        const { createCanvas, loadImage } = require('canvas');
+        
+        let frameImg, portraitImg;
+        try {
+            // Load Assets
+            frameImg = await loadImage(path.join(__dirname, 'public', 'memorial_frame.jpg'));
+            const fetch = (await import('node-fetch')).default;
+            const portraitResp = await fetch(swappedImageUrl);
+            const portraitBuffer = await portraitResp.buffer();
+            portraitImg = await loadImage(portraitBuffer);
+        } catch (loadErr) {
+            console.error('[HYBRID ERROR] Failed to load assets for canvas:', loadErr);
+            throw new Error("Canvas asset loading failed");
+        }
+
+        // Create High-Res Canvas (Cropped to 4:5 Portrait Ratio: 666x833)
+        // This removes the excessive white background from the sides of the original asset.
+        const canvas = createCanvas(666, 833);
+        const ctx = canvas.getContext('2d');
+
+        // 1. Draw Frame Asset with Offset (Crop sides)
+        // Source center is ~512. We take 666 wide, so x starts at 512 - 333 = 179
+        // Original asset: 1024x833.
+        ctx.drawImage(frameImg, -179, 0, 1024, 833);
+
+        // 2. Draw Portrait in the Centered Hole Area (Phase 31 Stable Baseline)
+        // Reverted to the proven stable size and position for maximum facial clarity.
+        const hole = { top: 255, left: 155, width: 345, height: 392 };
+        
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(portraitImg, hole.left, hole.top, hole.width, hole.height);
+
+        const finalBase64 = canvas.toDataURL('image/jpeg', 0.95);
         
         usageData.count += 1;
         fs.writeFileSync(usageFilePath, JSON.stringify(usageData));
         
-        console.log(`[AI Success] Fal.ai InstantID Generation complete. Zero-Retention applied. Usage updated: ${usageData.count}/2`);
+        console.log(`[AI Success] Hybrid Portrait Composite Complete. Usage: ${usageData.count}/20`);
         
-        // Respond to client with Base64 as before
+        // Respond to client
         res.json({
             success: true,
-            resultBase64: `data:image/jpeg;base64,${base64ImageOutput}`
+            resultBase64: finalBase64,
+            debug_info: {
+                swappedUrl: swappedImageUrl,
+                agedUrl: agedImageUrl,
+                baseUrl: baseImageUrl
+            }
         });
 
     } catch (error) {
