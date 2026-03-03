@@ -126,135 +126,101 @@ app.post('/generate', express.json(), async (req, res) => {
         
         const { fal } = await import("@fal-ai/client");
         
-        // --- STEP 1: RAW BASELINE SYNTHESIS (Clean & Plain) ---
+        // --- GENDER DETECTION & MAPPING ---
         const gender = req.body.gender || 'male';
         const isFemale = gender === 'female';
         const genderTerm = isFemale ? "woman" : "man";
         
         console.log(`[PROCESS] Target Gender: ${gender}`);
-
-        // --- STEP 1: IDENTITY-PRESERVING BASE SYNTHESIS ---
-        // Goal: Professional photographic baseline with zero artistic artifacts.
-        console.log(`[AI STEP 1] Generating Raw Baseline (${genderTerm}, 70-75 yrs, CFG 3.0)...`);
         
-        const basePrompt = (style === 'hanbok')
-            ? `A plain studio portrait of a dignified Korean ${genderTerm}, age 70-75, wearing traditional formal Hanbok, soft natural lighting, neutral grey background, realistic plain skin texture, soft aged features, un-edited photograph`
-            : `A professional, high-resolution studio portrait of a Korean ${genderTerm}, age 70, focusing on a calm and solemn expression. 35mm lens, f/8, raw photography texture, solid dark grey background, soft Rembrandt lighting. Wearing a formal black mourning attire.`;
-
-        const negativePrompt = "red circle, rising sun, frame, ribbon, border, illustration, painting, 3d render, anime, cartoon, sketch, smooth skin, plastic texture, glowing skin, vibrant colors, young, middle-aged, black hair, blurry, digital art, makeup, artificial lighting, distorted face.";
-
-        const baseResult = await fal.subscribe("fal-ai/instantid", {
-            input: {
-                face_image_url: dataURI,
-                prompt: basePrompt,
-                negative_prompt: negativePrompt,
-                ip_adapter_scale: 0.6,
-                controlnet_conditioning_scale: 0.4,
-                num_inference_steps: 30,
-                guidance_scale: 3.0 // Maintained at 3.0 for color stability
-            }
-        });
-
-        const baseImageUrl = baseResult.data.image ? baseResult.data.image.url : baseResult.data.images[0].url;
-        console.log(`[AI SUCCESS] Raw Base Synthesis Complete: ${baseImageUrl}`);
-
-        // --- STEP 2: PERSON-FOCUSED AGING TRANSFORMATION (Age 80) ---
-        // Goal: High-fidelity aging in a pure photographic space, focusing entirely on the person.
-        console.log(`[AI STEP 2] Person-Focused Refinement (${genderTerm}, Denoise 0.50, CFG 3.0)...`);
+        // --- STEP 1: FLUX KONTEXT PRO AGING & STYLING (Premium Hair Preservation) ---
+        // Goal: Transform original into 80-year-old WHILE PRESERVING unique hairstyle and adding the suit.
+        console.log(`[AI STEP 1] Generating Personalized Flux Aging (${genderTerm}, 80 yrs, Preserving Hair)...`);
         
-        const refinePrompt = `A professional portrait of an 80-year-old elderly Korean ${genderTerm}, deep wrinkles, sagging skin, white hair, 35mm lens, raw photo texture, solid dark grey background.`;
+        const fluxPrompt = `A high-resolution, photorealistic memorial portrait of an 80-year-old Korean ${genderTerm}. 
+        Natural aged skin and grey hair, preserving the person's unique hairstyle from the photo. 
+        Wearing a formal black mourning suit, white shirt, and black tie. 
+        Solid dark grey background, 35mm lens, raw photo texture, calm expression, museum quality. 
+        NO TEXT, NO WRITING, NO LETTERS, NO CAPTIONS, NO SUBTITLES.`;
 
-        const refineResult = await fal.subscribe("fal-ai/fast-sdxl/image-to-image", {
+        const fluxResult = await fal.subscribe("fal-ai/flux-pro/kontext", {
             input: {
-                image_url: baseImageUrl,
-                prompt: refinePrompt,
-                negative_prompt: negativePrompt,
-                strength: 0.50, // Fixed for Stability (Phase 28)
-                num_inference_steps: 30, 
-                guidance_scale: 3.0 // Fixed for Stability (Phase 28)
+                get_image_url: dataURI, 
+                image_url: dataURI, 
+                prompt: fluxPrompt,
+                guidance_scale: 3.5
             }
         });
 
-        const finalResult = refineResult.data.image ? refineResult.data.image : refineResult.data.images[0];
-        if (!finalResult) throw new Error("Raw aging refinement failed");
-
-        const agedImageUrl = finalResult.url;
-        console.log(`[AI SUCCESS] Raw Aging Complete. Proceeding to Hybrid Rendering...`);
-
-        // --- STEP 3: FACE SWAP ONTO GENDER-SPECIFIC SUIT TEMPLATE ---
-        // Goal: Ensure the suit and background are museum-quality by swapping the aged face onto a template.
-        console.log(`[AI STEP 3] Face-Swapping onto ${genderTerm} Suit Template...`);
-        const templateFilename = isFemale ? 'memorial_template_female.png' : 'memorial_template.png';
-        const templatePath = path.join(__dirname, templateFilename);
-        const templateBuffer = fs.readFileSync(templatePath);
-        const templateBase64 = "data:image/png;base64," + templateBuffer.toString('base64');
-
-        const swapResult = await fal.subscribe("fal-ai/face-swap", {
-            input: {
-                base_image_url: templateBase64,
-                swap_image_url: agedImageUrl
-            }
-        });
-
-        if (!swapResult.data || !swapResult.data.image) {
-             console.error('[AI ERROR] Face Swap Failed Structure:', JSON.stringify(swapResult, null, 2));
-             throw new Error("Face swap response structure invalid");
+        if (!fluxResult.data || !fluxResult.data.images || !fluxResult.data.images[0]) {
+            console.error('[AI ERROR] Flux Generation Failed:', JSON.stringify(fluxResult, null, 2));
+            throw new Error("Flux Kontext Pro generation failed or structure invalid");
         }
 
-        const swappedImageUrl = swapResult.data.image.url;
-        console.log(`[AI SUCCESS] Face Swap Complete: ${swappedImageUrl}`);
+        const agedImageUrl = fluxResult.data.images[0].url;
+        console.log(`[AI SUCCESS] Premium Flux Aging Complete: ${agedImageUrl}`);
 
-        // --- STEP 4: CANVAS COMPOSITE (WOODEN FRAME + RIBBONS) ---
-        // Goal: Automated assembly of the final memorial photo for printing.
-        console.log(`[HYBRID STEP 4] Compositing Final Framed Portrait (Phase 28 Stable Version)...`);
+        // --- STEP 2: BYPASSING RIGID TEMPLATES FOR HAIR VARIETY (Phase 38) ---
+        // We now trust Flux Kontext Pro to generate both the aged face and the suit correctly.
+        // This preserves the user's unique hairstyle instead of forcing a template's hair.
+        const swappedImageUrl = agedImageUrl; 
+        console.log(`[PROCESS] Bypassing fixed-hair template to preserve hairstyle variety.`);
+
+        // --- Frame Compositing: Stable original approach ---
+        console.log(`[FRAME] Compositing framed portrait (stable hole-based approach)...`);
         const { createCanvas, loadImage } = require('canvas');
-        
+        const fetchModule = (await import('node-fetch')).default;
+
+        // Fetch portrait buffer
+        let portraitBuffer;
+        try {
+            const portraitResp = await fetchModule(agedImageUrl);
+            portraitBuffer = await portraitResp.buffer();
+        } catch (fetchErr) {
+            console.error('[FRAME ERROR] Failed to fetch aged portrait:', fetchErr);
+            throw new Error("Portrait download failed: " + fetchErr.message);
+        }
+
         let frameImg, portraitImg;
         try {
-            // Load Assets
             frameImg = await loadImage(path.join(__dirname, 'public', 'memorial_frame.jpg'));
-            const fetch = (await import('node-fetch')).default;
-            const portraitResp = await fetch(swappedImageUrl);
-            const portraitBuffer = await portraitResp.buffer();
             portraitImg = await loadImage(portraitBuffer);
         } catch (loadErr) {
-            console.error('[HYBRID ERROR] Failed to load assets for canvas:', loadErr);
+            console.error('[FRAME ERROR] Failed to load assets:', loadErr);
             throw new Error("Canvas asset loading failed");
         }
 
-        // Create High-Res Canvas (Cropped to 4:5 Portrait Ratio: 666x833)
-        // This removes the excessive white background from the sides of the original asset.
         const canvas = createCanvas(666, 833);
         const ctx = canvas.getContext('2d');
-
-        // 1. Draw Frame Asset with Offset (Crop sides)
-        // Source center is ~512. We take 666 wide, so x starts at 512 - 333 = 179
-        // Original asset: 1024x833.
-        ctx.drawImage(frameImg, -179, 0, 1024, 833);
-
-        // 2. Draw Portrait in the Centered Hole Area (Phase 31 Stable Baseline)
-        // Reverted to the proven stable size and position for maximum facial clarity.
-        const hole = { top: 255, left: 155, width: 345, height: 392 };
-        
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
+
+        // 1. Draw frame (includes ribbon on top)
+        ctx.drawImage(frameImg, -179, 0, 1024, 833);
+
+        // 2. Draw portrait in the frame hole area
+        const hole = { top: 255, left: 155, width: 345, height: 392 };
         ctx.drawImage(portraitImg, hole.left, hole.top, hole.width, hole.height);
 
-        const finalBase64 = canvas.toDataURL('image/jpeg', 0.95);
-        
+        const framedBase64 = canvas.toDataURL('image/jpeg', 0.95);
+
+        // Raw display base64 (no frame) — reuse the same portrait buffer
+        const displayBase64 = `data:image/jpeg;base64,${portraitBuffer.toString('base64')}`;
+
         usageData.count += 1;
         fs.writeFileSync(usageFilePath, JSON.stringify(usageData));
         
-        console.log(`[AI Success] Hybrid Portrait Composite Complete. Usage: ${usageData.count}/20`);
+        console.log(`[AI Success] Generation Complete. Usage: ${usageData.count}/20`);
         
         // Respond to client
+        // resultBase64 = raw portrait for screen display (full, no frame)
+        // framedBase64 = framed portrait for download
         res.json({
             success: true,
-            resultBase64: finalBase64,
+            resultBase64: displayBase64,
+            framedBase64: framedBase64,
             debug_info: {
-                swappedUrl: swappedImageUrl,
-                agedUrl: agedImageUrl,
-                baseUrl: baseImageUrl
+                agedUrl: agedImageUrl
             }
         });
 
