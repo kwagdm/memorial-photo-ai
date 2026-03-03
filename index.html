@@ -72,6 +72,9 @@
                 <span class="btn-text">영정사진 생성하기</span>
                 <span class="btn-shine"></span>
             </button>
+            <div class="privacy-notice">
+                <i class="fas fa-shield-alt"></i> 사진은 서버에 전송 후 변환 즉시 영구 삭제됩니다.
+            </div>
             </div>
 
             <section class="result-section hidden" id="resultView">
@@ -101,9 +104,10 @@
                 </div>
 
                 <div class="action-footer">
-                    <button id="downloadBtn" class="primary-action-btn">
-                        <span class="icon">⬇️</span> 이미지 다운로드
+                    <button id="downloadBtn" class="save-btn">
+                        <i class="fas fa-download"></i> 영정사진 저장
                     </button>
+                    <p class="frame-notice"><i class="fas fa-image"></i> 저장 시 전통 영정 프레임이 자동 합성됩니다</p>
                     <button id="resetBtn" class="text-link-btn">다른 사진으로 다시하기</button>
                 </div>
             </section>

@@ -307,20 +307,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     resultImg.src = `${genResult.resultBase64}?t=${timestamp}`;
                 }
                 
-                // Setup Download Button
+                // Setup Download Button (uses framed version for download)
                 const downloadBtn = document.getElementById('downloadBtn');
                 downloadBtn.onclick = () => {
                     const link = document.createElement('a');
-                    link.download = 'memorial-photo-ai-result.jpg';
-                    link.href = genResult.resultBase64;
+                    link.download = 'memorial-portrait.jpg';
+                    link.href = genResult.framedBase64 || genResult.resultBase64;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
                 };
                 
-                // Scroll to result
-                document.getElementById('resultView').scrollIntoView({ behavior: 'smooth' });
-
                 // Scroll to result
                 document.getElementById('resultView').scrollIntoView({ behavior: 'smooth' });
             } else {

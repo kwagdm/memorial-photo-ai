@@ -458,6 +458,70 @@ body {
     padding: 0 !important; /* Phase 32: Force zero padding for full bleed */
 }
 
+/* Phase 35: Viral MVP Styles */
+.privacy-notice {
+    margin-top: 15px;
+    font-size: 0.85rem;
+    color: #a0a0a0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.privacy-notice i {
+    color: #4CAF50;
+}
+
+.result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.secondary-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.sharing-btn {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important;
+}
+
+.sharing-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+}
+
+@media (min-width: 768px) {
+    .result-actions {
+        flex-direction: row;
+    }
+    
+    .result-actions button {
+        flex: 1;
+    }
+}
 .image-wrapper img {
     width: 100% !important;
     height: 100% !important;
@@ -507,8 +571,52 @@ body {
 .action-footer {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    align-items: center;
+    gap: 12px;
     width: 100%;
+    margin-top: 24px;
+}
+
+/* Simple Save Button */
+.save-btn {
+    width: 100%;
+    padding: 15px 20px;
+    background: var(--primary);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(157, 139, 108, 0.3);
+}
+
+.save-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(157, 139, 108, 0.45);
+}
+
+.save-btn:active {
+    transform: translateY(0);
+}
+
+.frame-notice {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.35);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.frame-notice i {
+    color: rgba(157, 139, 108, 0.6);
 }
 
 .text-link-btn {
