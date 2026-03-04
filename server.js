@@ -47,10 +47,11 @@ app.post('/generate', express.json(), async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     const usageFilePath = path.join(__dirname, 'usage_log.json');
     
-    // 1. Check if AI is enabled
-    if (process.env.ENABLE_AI !== 'true') {
-        console.log('[AI Safety] AI generation is currently DISABLED via .env');
-        return res.status(503).json({ success: false, message: 'AI 기능이 현재 비활성화되어 있습니다.' });
+    // 1. Check if AI is enabled (Robust check for environment variables)
+    const isAiEnabled = String(process.env.ENABLE_AI).toLowerCase().trim() === 'true';
+    if (!isAiEnabled) {
+        console.log(`[AI Safety] AI generation is DISABLED. Current ENABLE_AI value: "${process.env.ENABLE_AI}"`);
+        return res.status(503).json({ success: false, message: 'AI 기능이 현재 비활성화되어 있습니다. (환경 변수 설정 필요)' });
     }
 
     console.log(`[AI Request] ${new Date().toLocaleString()} - AI generation requested.`);
