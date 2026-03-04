@@ -93,9 +93,11 @@ app.post('/generate', express.json(), async (req, res) => {
         const replicateToken = process.env.REPLICATE_API_TOKEN;
         const falKey = process.env.FAL_KEY;
 
-        if (!falKey) {
+        if (!process.env.FAL_KEY) {
+            console.error('[AI ERROR] FAL_KEY is missing in environment variables.');
             throw new Error('.env 파일에 FAL_KEY를 설정해주세요.');
         }
+        console.log(`[AI Config] FAL_KEY status: ${process.env.FAL_KEY ? 'Present (Length: ' + process.env.FAL_KEY.length + ')' : 'MISSING'}`);
 
         console.log(`[AI API] Processing file: ${imagePath}`);
         
